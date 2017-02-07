@@ -18,9 +18,6 @@ public class MainActivity extends Activity{
     /** Hold a reference to our GLSurfaceView */
     private ActivityGLSurfaceView mGLSurfaceView;
     private static SharedPreferences sp;
-    int value = 0;
-    int value1 = 0;
-    int value2 = 0;
 
     @Override
     public void onCreate(Bundle savedInstanceState)

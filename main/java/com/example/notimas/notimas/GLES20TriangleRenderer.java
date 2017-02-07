@@ -57,7 +57,6 @@ class GLES20TriangleRenderer implements GLSurfaceView.Renderer{
     float scrollY = 0;
     float scrollYSpeed = 0;
     boolean onDrawFrameWorkingFlag = false;
-    FloatObject fobj;
     BackGroundObj bgo;
     long endTime, startTime, dt;
     long FramePeriod = 16;
@@ -118,12 +117,15 @@ class GLES20TriangleRenderer implements GLSurfaceView.Renderer{
         }
         drawBackground(mScrollingBackgroundVertices);
         //float
-        GLES20.glUniform1f(maAlphaHandle, 1.0f);
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textures[1]);
-        Matrix.setRotateM(mMMatrix, 0, 0, 0f, 0f, 1f);
-        Matrix.translateM(mMMatrix, 0, fobj.flPosX, fobj.flPosY, 0f); 	//rotate center
-        reRoSa();
-        drawobj(mTriangleVertices);
+
+        for(int i = 0; i < fobjs.size(); i++) {
+            GLES20.glUniform1f(maAlphaHandle, 1.0f);
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textures[1]);
+            Matrix.setRotateM(mMMatrix, 0, 0, 0f, 0f, 1f);
+            Matrix.translateM(mMMatrix, 0, fobjs.get(i).flPosX, fobjs.get(i).flPosY, 0f); 	//rotate center
+            reRoSa(fobjs.get(i));
+            drawobj(mTriangleVertices);
+        }
         //float end
         /*
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textures[2]);
@@ -150,25 +152,25 @@ class GLES20TriangleRenderer implements GLSurfaceView.Renderer{
 		        drawobj(mDanVertices);
 			}
 		}
-//        if(touchDans != null){
-//			for(int i = 0;i < touchDans.size();i++){
-//				//Log.d(TAG, i + "," + dans.get(i).danX + "," +
-//				//dans.get(i).danY  + "," + dans.get(i).liveCount);
-//				Dan dan = touchDans.get(i);
-//				GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textures[dan.getDantextureNum()]);
-//		        Matrix.setRotateM(mMMatrix, 0, 0, 0, 0, 1.0f);
-//		        Matrix.translateM(mMMatrix, 0, dan.danX, dan.danY, 0.0f);
-//		        Matrix.rotateM(mMMatrix, 0, dan.radian360, 0, 0, 1.0f);
-//		        //Log.d(TAG, "" + dan.radian);
-//		        if(dan.alpha)
-//		        GLES20.glUniform1f(maAlphaHandle,
-//		        		((float)(dan.liveCount))*(dan.maxLiveCountInv));
-//		        else
-//		        	GLES20.glUniform1f(maAlphaHandle, 1);
-//		        Matrix.scaleM(mMMatrix, 0, dan.danScale, dan.danScale, 1); 			//scale
-//		        drawobj(mDanVertices);
-//			}
-//		}
+        if(touchDans != null){
+            for(int i = 0;i < touchDans.size();i++){
+                //Log.d(TAG, i + "," + dans.get(i).danX + "," +
+                //dans.get(i).danY  + "," + dans.get(i).liveCount);
+                Dan dan = touchDans.get(i);
+                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textures[dan.getDantextureNum()]);
+                Matrix.setRotateM(mMMatrix, 0, 0, 0, 0, 1.0f);
+                Matrix.translateM(mMMatrix, 0, dan.danX, dan.danY, 0.0f);
+                Matrix.rotateM(mMMatrix, 0, dan.radian360, 0, 0, 1.0f);
+                //Log.d(TAG, "" + dan.radian);
+                if(dan.alpha)
+                    GLES20.glUniform1f(maAlphaHandle,
+                            ((float)(dan.liveCount))*(dan.maxLiveCountInv));
+                else
+                    GLES20.glUniform1f(maAlphaHandle, 1);
+                Matrix.scaleM(mMMatrix, 0, dan.danScale, dan.danScale, 1); 			//scale
+                drawobj(mDanVertices);
+            }
+        }
 
        onDrawFrameWorkingFlag = false;
 	}
@@ -192,9 +194,14 @@ class GLES20TriangleRenderer implements GLSurfaceView.Renderer{
 		else if(scrollY < 0f) scrollY += 1f;
 		
 		//float object
-		fobj.step(processFrqPara);
+        for(int i = 0; i < fobjs.size(); i++) {
+            fobjs.get(i).step(processFrqPara);
+        }
+        for(int i = 0; i < shootFobjs.size(); i++) {
+            shootFobjs.get(i).step(processFrqPara);
+        }
+
 		//dan
-		
 		if(dans != null){
 			for(int i = 0;i < dans.size();i++){
 				if(!dans.get(i).isAlive()){
@@ -225,9 +232,7 @@ class GLES20TriangleRenderer implements GLSurfaceView.Renderer{
 		}
 	}
 
-	void reRoSa(){
-    	Matrix.rotateM(mMMatrix, 0, fobj.flRevoAngle, 0f, 0f, 1f);	//revolution
-        Matrix.translateM(mMMatrix, 0, 0f, fobj.flRevoRadiu, 0f); 	//revolution radius
+	void reRoSa(FloatObject fobj){
         Matrix.rotateM(mMMatrix, 0, fobj.flAngle, 0f, 0f, 1f);	//rotation
         Matrix.scaleM(mMMatrix, 0, fobj.flScale, fobj.flScale, 1); 			//scale
     }
@@ -300,40 +305,13 @@ class GLES20TriangleRenderer implements GLSurfaceView.Renderer{
         //Matrix.frustumM(mProjMatrix, 0, -wratio, wratio, -hratio, hratio, 5, 10);
         
         bgo = new BackGroundObj(bgXYratio, bgImageScale, hwratio);
-        
-    	//Log.d(TAG, "bgo " + bgo.Xratio + " " + bgo.Yratio);
-        //Log.d(TAG, "" + hwratio);
-//    	
-//        timerCancel();
-//        if(null == timer){
-//	        timer = new Timer("rot", true);
-//	        timer.scheduleAtFixedRate(new TimerTask(){
-//				@Override
-//				public void run() {
-//					// TODO Auto-generated method stub
-//		        	
-//					
-//				}
-//
-//				@Override
-//				public boolean cancel() {
-//					// TODO Auto-generated method stub
-//					Log.d("test", "timer canceled");
-//					return super.cancel();
-//				}
-//	        	
-//	        }, 0, (long) processFrqPara); //timer
-//        } 
+
     }
 	void vertecInit(){
 
         mTriangleVertices = ByteBuffer.allocateDirect(mTriangleVerticesData.length
                 * FLOAT_SIZE_BYTES).order(ByteOrder.nativeOrder()).asFloatBuffer();
         mTriangleVertices.put(mTriangleVerticesData).position(0);
-        
-        mTriangleVertices2 = ByteBuffer.allocateDirect(mTriangleVerticesData2.length
-                * FLOAT_SIZE_BYTES).order(ByteOrder.nativeOrder()).asFloatBuffer();
-        mTriangleVertices2.put(mTriangleVerticesData2).position(0);
         
         mDanVertices = ByteBuffer.allocateDirect(mDanVerticesData.length
                 * FLOAT_SIZE_BYTES).order(ByteOrder.nativeOrder()).asFloatBuffer();
@@ -349,6 +327,8 @@ class GLES20TriangleRenderer implements GLSurfaceView.Renderer{
 	
 	List<Dan> touchDans = null;
 	List<Dan> dans = new ArrayList<Dan>();
+    List<FloatObject> fobjs = null;
+    List<FloatObject> shootFobjs = null;
     int[] textures = new int[5];
     public float bgRotateAngle = 0;
     int bgImageScale = 0;
@@ -363,18 +343,31 @@ class GLES20TriangleRenderer implements GLSurfaceView.Renderer{
     	Log.d("test", "onSurfaceCreated");
     	SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(mContext);
     	screenclear();
-    	
-    	fobj = new FloatObject(dans);
-    	
-        FramePeriod = Integer.valueOf(sp.getString("FramePeriod", "16"));
         processFrqPara = FramePeriod * 0.75f;
         Log.d("processFrqPara", "" + processFrqPara);
-    	fobj.flRotateAngle = (float)sp.getInt("FlRotate", 0) * processFrqPara * 0.0025f;
-    	flEnable = sp.getBoolean("FlEnable", false);
-    	fobj.flScale = 1;
-        fobj.flPosX = (((sp.getInt("FlPos", spdefault) >> 8) & 0xff) -100 ) * 0.01f;
-        fobj.flPosY = ((sp.getInt("FlPos", spdefault) & 0xff) -100 ) * 0.01f;
-        
+
+        FramePeriod = Integer.valueOf(sp.getString("FramePeriod", "16"));
+        if(fobjs == null) {
+            fobjs = new ArrayList<FloatObject>();
+            for (int i = 0; i < 5; i++) {
+                fobjs.add(new FloatObject(null));
+                fobjs.get(i).flScale = 8;
+                fobjs.get(i).flPosX = -0.7f + i * 0.35f;
+                fobjs.get(i).flPosY = -0.35f;
+            }
+        }
+
+        if(shootFobjs == null) {
+            shootFobjs = new ArrayList<FloatObject>();
+            for (int i = 0; i < 5; i++) {
+                shootFobjs.add(new FloatObject(dans));
+                shootFobjs.get(i).floatObjCount = 6 * i;
+                shootFobjs.get(i).flScale = 8;
+                shootFobjs.get(i).flPosX = -0.7f + i * 0.35f;
+                shootFobjs.get(i).flPosY = 0.35f;
+                shootFobjs.get(i).setTarget(0.7f - i * 0.35f, -0.35f);
+            }
+        }
         //base color
         int color = Color.parseColor(sp.getString("BaseColor", "#995566"));
         BaseColor[0] = ((color>>16)&0xff) / 255f;	//R
@@ -440,7 +433,7 @@ class GLES20TriangleRenderer implements GLSurfaceView.Renderer{
 					mContext.getContentResolver().openInputStream(uri));
 		} catch (FileNotFoundException e) {
 	        loadImage2Trxtures(textures[1], mContext.getResources()
-	                .openRawResource(R.raw.arrow));
+	                .openRawResource(R.raw.test_button));
 		}
         mTriangleVerticesDataScale(ImageXYratio);
         
@@ -610,12 +603,12 @@ class GLES20TriangleRenderer implements GLSurfaceView.Renderer{
     public void createStarDan(float x, float y){
     	float radius = (float) Math.sqrt(Math.pow(x - LastCreateDanX, 2)
     			+ Math.pow(y - LastCreateDanY, 2));
-    	//Log.d(TAG, LastCreateDanX + "," + LastCreateDanY + "," + radius);
+    	Log.d(TAG, LastCreateDanX + "," + LastCreateDanY + "," + radius);
     	
     	if(cooldown <= 0){
 	    	float v = (float) (Math.random()*0.00125 + 0.00125f);
 	    	float angle = (float) (Math.random()*2*Math.PI);
-	    	//Log.d(TAG, x + "," + y + "," + scaleRatio);
+	    	Log.d(TAG, x + ", " + y);
 
 	    	//Log.d("aa", String.valueOf((float)(angle)));
 //	    	touchDans.add(new StarDan(wratio - x * ScreenScaleRatio * 2,
@@ -645,7 +638,7 @@ class GLES20TriangleRenderer implements GLSurfaceView.Renderer{
 	    			DanFunction.XY2A(x-LastCreateDanX, y-LastCreateDanY) + 1.57f,
 	    			processFrqPara)
 	    			//.locationOffset(0.05f, 0.15f)
-	    			.setScale(0.5f).setDanAlpha(true).setDecline(0, 960);
+	    			.setScale(0.5f).setDanAlpha(true).setDecline(960);
 //	    	sd.addChildDan(new ChildDan(new StarDan(0, 0, 
 //	    			(float) (Math.random()*0.00125 + 0.00125f),
 //	    			(float) DanFunction.XY2A(x - LastCreateDanX, LastCreateDanY - y), processFrqPara)

@@ -1,5 +1,7 @@
 package com.example.notimas.notimas;
 
+import android.util.Log;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,18 +28,19 @@ class Dan {
 	float maxLiveCountInv = 1f / (float)maxLiveCount;
 	int liveCount = maxLiveCount;
 	
-	Dan(float dX, float dY, float dV, float dA, float processFrqPara) {
-		float tempVX = DanFunction.VA2X(dV, dA) * processFrqPara;
-		float tempVY = DanFunction.VA2Y(dV, dA) * processFrqPara;
+	Dan(float dX, float dY, float dV, float dAngel, float processFrqPara) {
+		float tempVX = DanFunction.VA2X(dV, dAngel) * processFrqPara;
+		float tempVY = DanFunction.VA2Y(dV, dAngel) * processFrqPara;
 		this.processFrqPara = processFrqPara;
 		danX = dX;
 		danY = dY;
 		danVelocityX = tempVX;
 		danVelocityY = tempVY;
 	}
-	
-	Dan(){
-		
+
+	Dan(float dX, float dY) {
+		danX = dX;
+		danY = dY;
 	}
 	
 	int getDantextureNum(){
@@ -80,11 +83,15 @@ class Dan {
 		return this;
 	}
 	
-	Dan setDecline(float dAcc, int liveCount){
-		acclenrationX = -danVelocityX * dAcc * processFrqPara;
-		acclenrationY = -danVelocityY * dAcc * processFrqPara;
+	Dan setDecline(int liveCount){
 		liveDecline = processFrqPara;
 		setLiveCount(liveCount);
+		return this;
+	}
+
+	Dan setObstacle(float dAcc){
+		acclenrationX = -danVelocityX * dAcc * processFrqPara;
+		acclenrationY = -danVelocityY * dAcc * processFrqPara;
 		return this;
 	}
 	
@@ -213,7 +220,6 @@ class StarDan extends Dan {
 		super(dX, dY, dV, dA, processFrqPara);
 		radian360 = (float) (Math.random() * 360);
 		rotateVelocity = 0.375f * processFrqPara;
-		// TODO Auto-generated constructor stub
 	}
 	
 	StarDan setRotateDecline(float rotateAcclenration){
@@ -229,7 +235,6 @@ class StarDan extends Dan {
 
 	@Override
 	void danStep() {
-		// TODO Auto-generated method stub
 		//Log.d(TAG, "" + radian);
 		radian360 += rotateVelocity;
 		rotateVelocity += rotateAcclenration;
@@ -246,7 +251,6 @@ class ArrowDan extends Dan {
 		super(dX, dY, dV, dA, processFrqPara);
 		radian360 = dA * 57.325f;
 		danTextureNum = 4;
-		// TODO Auto-generated constructor stub
 	}
 	
 	ArrowDan setWhirl(float whirlPara){
@@ -256,7 +260,6 @@ class ArrowDan extends Dan {
 
 	@Override
 	void danStep() {
-		// TODO Auto-generated method stub
 		//Log.d(TAG, "" + radian);
 		super.danStep();
 		if(!isStoped()){
@@ -266,4 +269,40 @@ class ArrowDan extends Dan {
 		danVelocityY += whirl * danVelocityX;
 	}
 	
+}
+
+
+class BezierCurveDan extends Dan {
+
+	float stepTime = 0;
+	float dX0 = 0;
+	float dX1 = 0;
+	float dX2 = 0;
+	float dY0 = 0;
+	float dY1 = 0;
+	float dY2 = 0;
+
+
+	BezierCurveDan(float dX0, float dY0, float dX1, float dY1, float dX2, float dY2, float processFrqPara) {
+		super(dX0, dY0);
+		this.dX0 = dX0;
+		this.dX1 = dX1;
+		this.dX2 = dX2;
+		this.dY0 = dY0;
+		this.dY1 = dY1;
+		this.dY2 = dY2;
+		danTextureNum = 4;
+	}
+
+	@Override
+	void danStep() {
+		stepTime += 0.0056;
+		danX = (1-stepTime*stepTime)*dX0 + 2 * stepTime * (1 - stepTime)*dX1 + stepTime * stepTime * dX2;
+		danY = (1-stepTime*stepTime)*dY0 + 2 * stepTime * (1 - stepTime)*dY1 + stepTime * stepTime * dY2;
+		if(danX < -1.5 || danX > 1.5 || danY < -1.5 || danY > 1.5){
+			liveCount = 0;
+		}
+		liveCount -= liveDecline;
+	}
+
 }
