@@ -44,6 +44,7 @@ import android.opengl.GLUtils;
 import android.opengl.Matrix;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.view.MotionEvent;
 
 class GLES20TriangleRenderer implements GLSurfaceView.Renderer{
 
@@ -61,6 +62,7 @@ class GLES20TriangleRenderer implements GLSurfaceView.Renderer{
     long endTime, startTime, dt;
     long FramePeriod = 16;
     float last = 0;
+    MultitouchManager mMultitouchManager = new MultitouchManager();
     
     public void onDrawFrame(GL10 glUnused) {
         // Ignore the passed-in GL10 interface, and use the GLES20
@@ -133,6 +135,9 @@ class GLES20TriangleRenderer implements GLSurfaceView.Renderer{
         Matrix.translateM(mMMatrix, 0, 0.0f, 0.0f, 0.0f);
         drawobj(mTriangleVertices2);
         */
+        drawDans(dans);
+        drawDans(notes);
+        drawDans(touchDans);
         if(dans != null){
 			for(int i = 0;i < dans.size();i++){
 				//Log.d(TAG, i + "," + dans.get(i).danX + "," + 
@@ -143,11 +148,7 @@ class GLES20TriangleRenderer implements GLSurfaceView.Renderer{
 		        Matrix.translateM(mMMatrix, 0, dan.danX, dan.danY, 0.0f);
 		        Matrix.rotateM(mMMatrix, 0, dan.radian360, 0, 0, 1.0f);
 		        //Log.d(TAG, "" + dan.radian);
-		        if(dan.alpha)
-		        GLES20.glUniform1f(maAlphaHandle,
-		        		((float)(dan.liveCount))*(dan.maxLiveCountInv));
-		        else
-		        	GLES20.glUniform1f(maAlphaHandle, 1);
+		        GLES20.glUniform1f(maAlphaHandle, dan.alpha);
 		        Matrix.scaleM(mMMatrix, 0, dan.danScale, dan.danScale, 1); 			//scale
 		        drawobj(mDanVertices);
 			}
@@ -162,11 +163,7 @@ class GLES20TriangleRenderer implements GLSurfaceView.Renderer{
                 Matrix.translateM(mMMatrix, 0, dan.danX, dan.danY, 0.0f);
                 Matrix.rotateM(mMMatrix, 0, dan.radian360, 0, 0, 1.0f);
                 //Log.d(TAG, "" + dan.radian);
-                if(dan.alpha)
-                    GLES20.glUniform1f(maAlphaHandle,
-                            ((float)(dan.liveCount))*(dan.maxLiveCountInv));
-                else
-                    GLES20.glUniform1f(maAlphaHandle, 1);
+                GLES20.glUniform1f(maAlphaHandle, dan.alpha);
                 Matrix.scaleM(mMMatrix, 0, dan.danScale, dan.danScale, 1); 			//scale
                 drawobj(mDanVertices);
             }
@@ -174,6 +171,26 @@ class GLES20TriangleRenderer implements GLSurfaceView.Renderer{
 
        onDrawFrameWorkingFlag = false;
 	}
+
+    private void drawDans(List<Dan> dans){
+        if(dans != null){
+            for(int i = 0;i < dans.size();i++){
+                //Log.d(TAG, i + "," + dans.get(i).danX + "," +
+                //dans.get(i).danY  + "," + dans.get(i).liveCount);
+                Dan dan = dans.get(i);
+                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textures[dan.getDantextureNum()]);
+                Matrix.setRotateM(mMMatrix, 0, 0, 0, 0, 1.0f);
+                Matrix.translateM(mMMatrix, 0, dan.danX, dan.danY, 0.0f);
+                Matrix.rotateM(mMMatrix, 0, dan.radian360, 0, 0, 1.0f);
+                //Log.d(TAG, "" + dan.radian);
+                GLES20.glUniform1f(maAlphaHandle, dan.alpha);
+                Matrix.scaleM(mMMatrix, 0, dan.danScale, dan.danScale, 1); 			//scale
+                drawobj(mDanVertices);
+            }
+        }
+    }
+
+    int shootnumber = 0;
 
 	private void runObjectStep() {
 		// TODO Auto-generated method stub
@@ -183,6 +200,7 @@ class GLES20TriangleRenderer implements GLSurfaceView.Renderer{
     	} else {
     		bgAngle = 0;
     	}
+
 		
 		//background
 		
@@ -194,43 +212,42 @@ class GLES20TriangleRenderer implements GLSurfaceView.Renderer{
 		else if(scrollY < 0f) scrollY += 1f;
 		
 		//float object
-        for(int i = 0; i < fobjs.size(); i++) {
-            fobjs.get(i).step(processFrqPara);
-        }
-        for(int i = 0; i < shootFobjs.size(); i++) {
-            shootFobjs.get(i).step(processFrqPara);
+//        for(int i = 0; i < fobjs.size(); i++) {
+//            fobjs.get(i).step(processFrqPara);
+//        }
+//        for(int i = 0; i < shootFobjs.size(); i++) {
+//            shootFobjs.get(i).step(processFrqPara);
+//        }
+        if (cooldown < 0){
+            shootnumber = (int)(Math.random() * 5f);
+            if(shootnumber > 4){
+                shootnumber = 4;
+            }
+            shootFobjs.get(shootnumber).shoot(fobjs.get(shootnumber));
+            cooldown = 180;
         }
 
 		//dan
-		if(dans != null){
-			for(int i = 0;i < dans.size();i++){
-				if(!dans.get(i).isAlive()){
-					if(!onDrawFrameWorkingFlag){
-						dans.get(i).danBirth(dans);
-						dans.remove(i);
-						i--;
-					}
-				} else {
-					dans.get(i).danStep();
-				}
-			}
-		}
-		if(touchDans != null){
-			for(int i = 0;i < touchDans.size();i++){
-				if(!touchDans.get(i).isAlive()){
-					if(!onDrawFrameWorkingFlag){
-						if(touchDans.get(i).hasChild())
-							touchDans.addAll(touchDans.get(i).getChildDans(processFrqPara));
-						touchDans.remove(i);
-						i--;
-					}
-				} else {
-					touchDans.get(i).danStep();
-					
-				}
-			}
-		}
+        dansStep(dans);
+        dansStep(touchDans);
+        dansStep(notes);
 	}
+
+    private void dansStep(List<Dan> dans){
+        if(dans != null){
+            for(int i = 0;i < dans.size();i++){
+                if(!dans.get(i).isAlive()){
+                    if(!onDrawFrameWorkingFlag){
+                        dans.get(i).danBirth(dans);
+                        dans.remove(i);
+                        i--;
+                    }
+                } else {
+                    dans.get(i).danStep();
+                }
+            }
+        }
+    }
 
 	void reRoSa(FloatObject fobj){
         Matrix.rotateM(mMMatrix, 0, fobj.flAngle, 0f, 0f, 1f);	//rotation
@@ -289,7 +306,9 @@ class GLES20TriangleRenderer implements GLSurfaceView.Renderer{
     	SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(mContext);
     	Log.d("test", "onSurfaceChanged");
         GLES20.glViewport(0, 0, width, height);
-        
+        if(mMultitouchManager != null) {
+            mMultitouchManager.clear();
+        }
         touchDans = new ArrayList<Dan>();
         hwratio = (float) height / width;
         if(height > width){
@@ -327,6 +346,7 @@ class GLES20TriangleRenderer implements GLSurfaceView.Renderer{
 	
 	List<Dan> touchDans = null;
 	List<Dan> dans = new ArrayList<Dan>();
+    List<Dan> notes = new ArrayList<Dan>();
     List<FloatObject> fobjs = null;
     List<FloatObject> shootFobjs = null;
     int[] textures = new int[5];
@@ -360,12 +380,12 @@ class GLES20TriangleRenderer implements GLSurfaceView.Renderer{
         if(shootFobjs == null) {
             shootFobjs = new ArrayList<FloatObject>();
             for (int i = 0; i < 5; i++) {
-                shootFobjs.add(new FloatObject(dans));
-                shootFobjs.get(i).floatObjCount = 6 * i;
+                shootFobjs.add(new FloatObject(notes));
+                shootFobjs.get(i).floatObjCount = 8 * i;
                 shootFobjs.get(i).flScale = 8;
-                shootFobjs.get(i).flPosX = -0.7f + i * 0.35f;
+                shootFobjs.get(i).flPosX = -0.6f + i * 0.3f;
                 shootFobjs.get(i).flPosY = 0.35f;
-                shootFobjs.get(i).setTarget(0.7f - i * 0.35f, -0.35f);
+//                shootFobjs.get(i).setTarget(-0.7f + i * 0.35f, -0.35f);
             }
         }
         //base color
@@ -599,46 +619,83 @@ class GLES20TriangleRenderer implements GLSurfaceView.Renderer{
     float LastCreateDanX;
     float LastCreateDanY;
     int slideCount = 0;
+
+    public void touchEvent (MotionEvent e){
+
+        // get pointer index from the event object
+        int pointerIndex = e.getActionIndex();
+
+        // get pointer ID
+        int pointerId = e.getPointerId(pointerIndex);
+
+        // get masked (not specific to a pointer) action
+        int maskedAction = e.getActionMasked();
+
+        switch (maskedAction) {
+
+            case MotionEvent.ACTION_DOWN:
+            case MotionEvent.ACTION_POINTER_DOWN: {
+                Log.d(TAG, "Down:" + pointerIndex);
+                mMultitouchManager.pointerDown(e.getX(pointerIndex), e.getY(pointerIndex));
+                createTouchDan(mMultitouchManager.getPointer(pointerIndex));
+                calculateKeyboard(e.getX(pointerIndex), e.getY(pointerIndex));
+                break;
+            }
+            case MotionEvent.ACTION_MOVE: { // a pointer was moved
+                Log.d(TAG, "Move:" + pointerIndex);
+                for(int i = 0; i < e.getPointerCount();i++){
+                    mMultitouchManager.pointerMove(i, e.getX(i), e.getY(i));
+                    createTouchDan(mMultitouchManager.getPointer(i));
+                }
+                break;
+            }
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_POINTER_UP:
+            case MotionEvent.ACTION_CANCEL: {
+                Log.d(TAG, "Up:" + pointerIndex);
+                mMultitouchManager.pointerUp(pointerIndex);
+                break;
+            }
+        }
+    }
     
-    public void createStarDan(float x, float y){
-    	float radius = (float) Math.sqrt(Math.pow(x - LastCreateDanX, 2)
-    			+ Math.pow(y - LastCreateDanY, 2));
-    	Log.d(TAG, LastCreateDanX + "," + LastCreateDanY + "," + radius);
+    public void createTouchDan(MultitouchManager.TouchPointer tp){
+    	float radius = (float) Math.sqrt(Math.pow(tp.nowX - tp.eventX, 2)
+    			+ Math.pow(tp.nowY - tp.eventY, 2));
+//    	Log.d(TAG, LastCreateDanX + "," + LastCreateDanY + "," + radius);
     	
-    	if(cooldown <= 0){
+    	if(tp.eventTimer <= 0){
 	    	float v = (float) (Math.random()*0.00125 + 0.00125f);
 	    	float angle = (float) (Math.random()*2*Math.PI);
-	    	Log.d(TAG, x + ", " + y);
 
 	    	//Log.d("aa", String.valueOf((float)(angle)));
 //	    	touchDans.add(new StarDan(wratio - x * ScreenScaleRatio * 2,
 //	    			hratio - y * ScreenScaleRatio * 2, v, angle,
 //	    			processFrqPara).setScale(0.7f).setDecline(0.001f, 960)
 //	    	);
-	    	cooldown = 96;
-	    	LastCreateDanX = x;
-	    	LastCreateDanY = y;
-	    	slideCount = 0;
+	    	tp.eventTimer = 96;
+            tp.setEventLocation(tp.nowX, tp.nowY);
+            tp.eventCounter = 0;
     	}else if(120 < radius){
 	    	float v = (float) (Math.random()*0.00125 + 0.00125f);
 	    	float angle = (float) (Math.random()*2*Math.PI);
 	    	//
-	    	slideCount += 1;
+            tp.eventCounter += 1;
 	    	//Log.d(TAG, "" + slideCount);
 	    	float temp = 120f/radius;
-	    	LastCreateDanX += (x - LastCreateDanX)*temp;
-	    	LastCreateDanY += (y - LastCreateDanY)*temp;
+            tp.setEventLocation(tp.eventX + (tp.nowX - tp.eventX)*temp,
+                    tp.eventY + (tp.nowY - tp.eventY)*temp);
 //	    	touchDans.add(new StarDan(wratio - x * ScreenScaleRatio * 2,
 //	    			hratio - y * ScreenScaleRatio * 2, v,
 //	    			angle, processFrqPara).setScale(0.6f).setDecline(0.001f, 960)
 //	    	);
-	    	ArrowDan sd = (ArrowDan) new ArrowDan(wratio - LastCreateDanX * ScreenScaleRatio * 2,
-	    			hratio - LastCreateDanY * ScreenScaleRatio * 2,
+	    	ArrowDan sd = (ArrowDan) new ArrowDan(wratio - tp.eventX * ScreenScaleRatio * 2,
+	    			hratio - tp.eventY * ScreenScaleRatio * 2,
 	    			0,
-	    			DanFunction.XY2A(x-LastCreateDanX, y-LastCreateDanY) + 1.57f,
+	    			DanFunction.XY2A(tp.nowX-tp.eventX, tp.nowY-tp.eventY) + 1.57f,
 	    			processFrqPara)
 	    			//.locationOffset(0.05f, 0.15f)
-	    			.setScale(0.5f).setDanAlpha(true).setDecline(960);
+	    			.setScale(0.5f).setDanAlpha(1).setLiveCount(960).setDecline(processFrqPara);
 //	    	sd.addChildDan(new ChildDan(new StarDan(0, 0, 
 //	    			(float) (Math.random()*0.00125 + 0.00125f),
 //	    			(float) DanFunction.XY2A(x - LastCreateDanX, LastCreateDanY - y), processFrqPara)
@@ -651,11 +708,52 @@ class GLES20TriangleRenderer implements GLSurfaceView.Renderer{
 //	    			(float) (Math.random()*0.00125 + 0.00125f),
 //	    			(float) DanFunction.XY2A(x - LastCreateDanX, LastCreateDanY - y), processFrqPara)
 //	    			.setRotateDecline(0.015f).setScale(0.4f).setDecline(0.001f, 960) , true, false, false));
-	    	sd.setLiveCount(sd.liveCount + 32 * (slideCount - 3));
+	    	sd.setLiveCount(sd.liveCount + 32 * (tp.eventCounter - 3));
 	    	touchDans.add(sd);
-	    	cooldown = 96;
-	    	createStarDan(x,y);
+	    	tp.eventTimer = 96;
+            createTouchDan(tp);
     	}
+    }
+
+    void calculateKeyboard(float screenX, float screenY){
+        Log.d(TAG, "calculateKeyboard" + screenX);
+        float glX = wratio - screenX * ScreenScaleRatio * 2;
+        if(glX >= -0.875f && glX < -0.525f){
+            elimiNote(fobjs.get(0));
+        }else if(glX >= -0.525f && glX < -0.175f){
+            elimiNote(fobjs.get(1));
+        }else if(glX >= -0.175f && glX < 0.175f){
+            elimiNote(fobjs.get(2));
+        }else if(glX >= 0.175f && glX < 0.525f){
+            elimiNote(fobjs.get(3));
+        }else if(glX >= 0.525f && glX < 0.875f){
+            elimiNote(fobjs.get(4));
+        }
+    }
+
+    void elimiNote(FloatObject fobj){
+        Log.d(TAG, "elimiNote()");
+        for(int i = notes.size() - 1; i >= 0; i--){
+            Note mNote = (Note)notes.get(i);
+            if(mNote.target == fobj){
+                if(mNote.stepTime > 0.97f && mNote.stepTime < 1.03f){
+                    dans.add(dans.size(), new EmiliEffectDan(mNote.target.flPosX, mNote.target.flPosY)
+                            .setScale(0.2f).setScaleGrowSpeed(0.03f).setLiveCount(30).setDecline(1).setMaxLiveCount(30));
+                    mNote.danDie();
+                    break;
+                }else if(mNote.stepTime > 0.94f && mNote.stepTime < 1.06f){
+                    dans.add(dans.size(), new EmiliEffectDan(mNote.target.flPosX, mNote.target.flPosY)
+                            .setScale(0.2f).setScaleGrowSpeed(0.015f).setLiveCount(30).setDecline(1).setMaxLiveCount(30));
+                    mNote.danDie();
+                }
+            }else if(mNote.stepTime <= 0.9){
+                break;
+            }
+        }
+    }
+
+    public void pressKeyboard(float x, float y, int touchIndex){
+
     }
 
     private static final int FLOAT_SIZE_BYTES = 4;

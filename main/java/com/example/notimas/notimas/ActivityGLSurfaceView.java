@@ -13,7 +13,6 @@ public class ActivityGLSurfaceView extends GLSurfaceView {
 	ActivityGLSurfaceView(Context context) {
 		super(context);
 		Log.d(TAG, "WallpaperGLSurfaceView(" + context + ")");
-		
 	}
 
 
@@ -22,22 +21,7 @@ public class ActivityGLSurfaceView extends GLSurfaceView {
 		// TODO Auto-generated method stub
 		if (e != null)
 		{
-			float x = e.getX();
-	        float y = e.getY();
-	        
-	        switch (e.getAction()) {
-	        	case MotionEvent.ACTION_DOWN:
-	            	mRenderer.cooldown = 0;
-	            	mRenderer.createStarDan(x, y);
-	            	break;
-	            case MotionEvent.ACTION_MOVE:
-	            	mRenderer.createStarDan(x, y);
-	            	break;
-	            case MotionEvent.ACTION_UP:
-	            	mRenderer.cooldown = 0;
-	            	mRenderer.createStarDan(x, y);
-	            	break;
-	        }
+			mRenderer.touchEvent(e);
 	        return true;
 		}
 		else

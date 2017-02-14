@@ -35,13 +35,15 @@ class FloatObject {
 		}
 		if(floatObjCount <= 0){
 			shoot(targetX, targetY);
-	    	floatObjCount = 300f/processFrqPara;
+	    	floatObjCount = 600f/processFrqPara;
 		}else{
 			floatObjCount--;
 		}
 	}
 
 	public void setTarget(float targetX, float targetY) {
+		Log.d("FLOAT", "setTarget: " + targetX + ", " + targetY);
+		Log.d("FLOAT", "pos: " + flPosX + ", " + flPosY);
 		this.targetX = targetX;
 		this.targetY = targetY;
 	}
@@ -52,12 +54,23 @@ class FloatObject {
 				flPosX,
 				flPosY,
 				dx,
-				0.8f,
+				0.6f,
 				dx,
 				dy,
 				processFrqPara)
 				.setScale(0.3f)
-				.setScaleGrowSpeed(0.002f);
-		dans.add(bcd);
+				.setScaleGrowSpeed(0.0015f);
+		dans.add(0, bcd);
+	}
+
+	public void shoot(FloatObject target){
+		if(dans == null){ return;}
+		Note note = (Note) new Note(
+				flPosX,
+				flPosY,
+				target,
+				0.0083f)
+				.setScale(0);
+		dans.add(0, note);
 	}
 }

@@ -20,11 +20,10 @@ class Dan {
 	float liveDecline = 0;
 	float radian360 = 0;
 	int danTextureNum = 3;
-	boolean alpha = true;
+	float alpha = 1;
 	boolean reverseAlpha = false;
 	List<ChildDan> childDans = null;
-	
-	static final int maxLiveCount = 480;
+	int maxLiveCount = 480;
 	float maxLiveCountInv = 1f / (float)maxLiveCount;
 	int liveCount = maxLiveCount;
 	
@@ -83,9 +82,8 @@ class Dan {
 		return this;
 	}
 	
-	Dan setDecline(int liveCount){
-		liveDecline = processFrqPara;
-		setLiveCount(liveCount);
+	Dan setDecline(float Decline){
+		liveDecline = Decline;
 		return this;
 	}
 
@@ -108,7 +106,7 @@ class Dan {
 		liveCount = -1;
 	}
 	
-	Dan setDanAlpha(Boolean alpha){
+	Dan setDanAlpha(float alpha){
 		this.alpha = alpha;
 		return this;
 	}
@@ -125,6 +123,11 @@ class Dan {
 
 	Dan setLiveCount(int liveCount){
 		this.liveCount = liveCount;
+		return this;
+	}
+
+	Dan setMaxLiveCount(int liveCount){
+		this.maxLiveCount = liveCount;
 		return this;
 	}
 	
@@ -211,6 +214,20 @@ class ChildDan {
 	}
 }
 
+class EmiliEffectDan extends Dan {
+
+	EmiliEffectDan(float dX, float dY){
+		super(dX, dY);
+	}
+
+	@Override
+	void danStep() {
+		super.danStep();
+		Log.d(TAG, liveCount + " " + maxLiveCount);
+		setDanAlpha(((float)liveCount) / ((float)maxLiveCount));
+	}
+}
+
 class StarDan extends Dan {
 	
 	float rotateVelocity = 3f;
@@ -267,6 +284,9 @@ class ArrowDan extends Dan {
 		}
 		danVelocityX -= whirl * danVelocityY ;
 		danVelocityY += whirl * danVelocityX;
+		if(liveCount < maxLiveCount){
+			alpha = (float)liveCount / maxLiveCount;
+		}
 	}
 	
 }
@@ -275,6 +295,7 @@ class ArrowDan extends Dan {
 class BezierCurveDan extends Dan {
 
 	float stepTime = 0;
+	float oneStepTime = 0.0083f;
 	float dX0 = 0;
 	float dX1 = 0;
 	float dX2 = 0;
@@ -282,8 +303,7 @@ class BezierCurveDan extends Dan {
 	float dY1 = 0;
 	float dY2 = 0;
 
-
-	BezierCurveDan(float dX0, float dY0, float dX1, float dY1, float dX2, float dY2, float processFrqPara) {
+	BezierCurveDan(float dX0, float dY0, float dX1, float dY1, float dX2, float dY2, float oneStepTime) {
 		super(dX0, dY0);
 		this.dX0 = dX0;
 		this.dX1 = dX1;
@@ -291,18 +311,40 @@ class BezierCurveDan extends Dan {
 		this.dY0 = dY0;
 		this.dY1 = dY1;
 		this.dY2 = dY2;
-		danTextureNum = 4;
+		this.oneStepTime = oneStepTime;
+		danTextureNum = 1;
 	}
 
 	@Override
 	void danStep() {
-		stepTime += 0.0056;
-		danX = (1-stepTime*stepTime)*dX0 + 2 * stepTime * (1 - stepTime)*dX1 + stepTime * stepTime * dX2;
-		danY = (1-stepTime*stepTime)*dY0 + 2 * stepTime * (1 - stepTime)*dY1 + stepTime * stepTime * dY2;
+		stepTime += oneStepTime;
+		danX = (1-stepTime)*(1-stepTime)*dX0 + 2 * stepTime * (1 - stepTime)*dX1 + stepTime * stepTime * dX2;
+		danY = (1-stepTime)*(1-stepTime)*dY0 + 2 * stepTime * (1 - stepTime)*dY1 + stepTime * stepTime * dY2;
+//		danScale += scaleGrowSpeed;
 		if(danX < -1.5 || danX > 1.5 || danY < -1.5 || danY > 1.5){
 			liveCount = 0;
 		}
 		liveCount -= liveDecline;
 	}
+}
 
+class Note extends BezierCurveDan{
+
+	public FloatObject target = null;
+	public Note linkNote = null;
+	public int noteType = 0;
+
+	Note(float dX0, float dY0, FloatObject target, float processFrqPara) {
+		super(dX0, dY0, target.flPosX, 0.6f, target.flPosX, target.flPosY, processFrqPara);
+		this.target = target;
+	}
+
+	@Override
+	void danStep() {
+		super.danStep();
+		this.setScale(0.5f * stepTime);
+		if(stepTime >= 1.05f){
+			danDie();
+		}
+	}
 }
